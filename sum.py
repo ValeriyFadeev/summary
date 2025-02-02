@@ -7,7 +7,6 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
 # Инициализируем FastAPI
-app = FastAPI()
 
 # ======= Модель суммаризации загружаем при старте =======
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -28,6 +27,7 @@ async def lifespan(app: FastAPI):
     ).to(device)
     print("=== Model loaded successfully! ===", flush=True)
     yield
+app = FastAPI(lifespan=lifespan)
 # ======= Функции суммаризации =======
 def split_text(text, tokenizer, max_tokens=900, overlap=100):
     tokens = tokenizer.encode(text, add_special_tokens=False)
@@ -85,7 +85,7 @@ def summarize_chunk(text):
     return tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
 def summarize_long_text(text):
-    chunks = split_text(text, tokenizer)
+    chunks = split_text(text)
     summaries = []
 
     for chunk in tqdm(chunks, desc="Обработка чанков"):

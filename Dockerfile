@@ -3,9 +3,10 @@ FROM python:3.11
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
+COPY ./requirements.txt /app/requirements.txt
 # Обновляем pip
 RUN pip install --no-cache-dir --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 # Устанавливаем Uvicorn напрямую с GitHub
 RUN pip install --no-cache-dir git+https://github.com/encode/uvicorn.git
 
