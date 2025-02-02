@@ -85,7 +85,7 @@ def summarize_chunk(text):
     return tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
 def summarize_long_text(text):
-    chunks = split_text(text)
+    chunks = split_text(text,tokenizer)
     summaries = []
 
     for chunk in tqdm(chunks, desc="Обработка чанков"):
