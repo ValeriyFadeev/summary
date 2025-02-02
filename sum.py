@@ -5,7 +5,7 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from fastapi import FastAPI
 from pydantic import BaseModel
-
+from contextlib import asynccontextmanager
 # Инициализируем FastAPI
 app = FastAPI()
 
@@ -13,13 +13,21 @@ app = FastAPI()
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model_name = "ai-forever/FRED-T5-1.7B"  # или любая другая
 
-tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
-model = AutoModelForSeq2SeqLM.from_pretrained(
-    model_name,
-    torch_dtype=torch.float16 if device == "cuda" else torch.float32,
-    device_map="auto" if device == "cuda" else None
-).to(device)
-
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Загрузка моделей при старте приложения.
+    """
+    global tokenizer, model
+    print("=== Loading the model on startup ===", flush=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+    model = AutoModelForSeq2SeqLM.from_pretrained(
+        model_name,
+        torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+        device_map="auto" if device == "cuda" else None
+    ).to(device)
+    print("=== Model loaded successfully! ===", flush=True)
+    yield
 # ======= Функции суммаризации =======
 def split_text(text, tokenizer, max_tokens=900, overlap=100):
     tokens = tokenizer.encode(text, add_special_tokens=False)
@@ -99,6 +107,9 @@ class SummarizationRequest(BaseModel):
     text: str
 
 # ======= Эндпоинт =======
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "The server is up and running"}
 @app.post("/summarize")
 def summarize_api(request_data: SummarizationRequest):
     """
